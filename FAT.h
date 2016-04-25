@@ -10,6 +10,7 @@ class FAT {
         void dir(std::string dir_name);
         void read_sector(int num, bool root_dir);
         int get_next_sector(int num, bool root_dir);
+        void get_entries(char* fs);
         std::string get_filename(int entry);
 
     private:
