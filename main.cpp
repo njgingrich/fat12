@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "FAT.h"
+
 using std::cout;
 using std::cin;
 using std::istringstream;
@@ -20,20 +22,20 @@ vector<string> read_cmdline() {
     string t;
     vector<string> input;
     getline(cin, t);
-    istringsteam iss(t);
+    istringstream iss(t);
     string word;
     while (iss >> word) {
-        input.insert(word);
+        input.push_back(word);
     }
 }
 
 int main(int argc, char** argv) {
-    FATDriver fat = FATDriver();
+    FAT fat = FAT();
     vector<string> input;
-    bool continue = true;
+    bool cont = true;
     do {
         input = read_cmdline();
-    } while (continue);
+    } while (cont);
 
     fat.dir(input.front());
 }

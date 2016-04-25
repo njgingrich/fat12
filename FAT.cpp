@@ -15,7 +15,10 @@ using std::cout;
 using std::endl;
 using std::string;
 
-FATDriver::FAT() {
+const int FAT::FAT_ENTRY_OFFSET = 512;
+const int FAT::DIR_OFFSET = 9728;
+
+FAT::FAT() {
 
 }
 
@@ -44,3 +47,41 @@ char* FAT::open_file(std::string filename) {
     }
     return fs;
 }
+
+void FAT::read_sector(int num, bool root_dir) {
+
+}
+
+/**
+ * Initialize the program by putting the root directory entries into
+ * a vector to make it simpler to traverse the directory entries later.
+ */
+void FAT::get_entries(char* fs) {
+    vector<
+    for (int i = 0; i < 224; i++) {
+        char* entry_start = (i * 32) + FAT::DIR_OFFSET;
+
+    }
+}
+
+/**
+ * The filename is the first eight bytes of the directory, with the next
+ * three bytes as the extension.
+ */
+string FAT::get_filename(int entry, char* fs) {
+
+}
+
+int FAT::get_next_sector(int num, bool root_dir) {
+    if (root_dir) {
+        return num + 1;
+    } else {
+        return -1; // TODO
+    }
+}
+
+
+
+
+
+
