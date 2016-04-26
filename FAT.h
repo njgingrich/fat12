@@ -3,18 +3,24 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
+
+#include "DirEntry.h"
 
 class FAT {
     public:
         FAT();
-        void dir(std::string dir_name);
+        char* dir(std::string dir_name);
         void read_sector(int num, bool root_dir);
         int get_next_sector(int num, bool root_dir);
         void get_entries(char* fs);
-        std::string get_filename(int entry);
+        std::string get_filename(int entry, char* start_byte);
+        std::string  get_creation_time(char* start_byte);
 
     private:
         char* open_file(std::string filename);
+
+        std::vector<DirEntry> entries;
         static const int FAT_ENTRY_OFFSET;
         static const int DIR_OFFSET;
 };

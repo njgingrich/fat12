@@ -31,13 +31,15 @@ vector<string> read_cmdline() {
 
 int main(int argc, char** argv) {
     FAT fat = FAT();
-    vector<string> input;
+/*    vector<string> input;
     bool cont = true;
     do {
         input = read_cmdline();
     } while (cont);
-
-    fat.dir(input.front());
+*/
+    char* fs = fat.dir("floppy.img");
+    //cout << "\n";
+    fat.get_entries(fs);
 }
 
 
