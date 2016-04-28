@@ -27,9 +27,12 @@ vector<string> read_cmdline() {
     while (iss >> word) {
         input.push_back(word);
     }
+    return input;
 }
 
 int main(int argc, char** argv) {
+    (void)argc;
+    (void)argv;
     FAT fat = FAT();
 /*    vector<string> input;
     bool cont = true;
@@ -40,6 +43,9 @@ int main(int argc, char** argv) {
     char* fs = fat.dir("floppy.img");
     //cout << "\n";
     fat.get_entries(fs);
+    for (int i = 0; i < 10; i++) {
+        fat.info(i, fs);
+    }
 }
 
 

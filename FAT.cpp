@@ -50,7 +50,8 @@ char* FAT::open_file(std::string filename) {
 }
 
 void FAT::read_sector(int num, bool root_dir) {
-
+    if (num) {}
+    if (root_dir) {}
 }
 
 /**
@@ -59,10 +60,14 @@ void FAT::read_sector(int num, bool root_dir) {
  */
 void FAT::get_entries(char* fs) {
     cout << endl;
+    struct tm* t;
     for (int i = 0; i < 30; i++) {
         char* entry_start = fs + (i * 32);
         cout << "entry " << i << ": " << get_filename(i, entry_start) << endl;
-        cout << "\t" << get_creation_time(entry_start) << endl;
+        t = get_modified_time(entry_start);
+        char buffer[80];
+        strftime(buffer, 80, "%m/%d/%Y  %H:%M:%S", t);
+        cout << "\t" << buffer << endl;
     }
 }
 
@@ -71,6 +76,7 @@ void FAT::get_entries(char* fs) {
  * three bytes as the extension.
  */
 string FAT::get_filename(int entry, char* start_byte) {
+    start_byte += (entry * 32);
     string filename;
     for (int i = 0; i < 8; i++) {
         if (start_byte[i] != ' ') {
@@ -86,17 +92,56 @@ string FAT::get_filename(int entry, char* start_byte) {
     return filename;
 }
 
-tm FAT::get_creation_time(char* start_byte) {
-    start_byte += 14; // offset for first byte of creation time
+/**
+ * All it does is take something like this:
+ *     00001001 01101100
+ * And makes it this:
+ *     2/15/2013  9:53:12
+ */
+
+
+struct tm* FAT::get_modified_time(char* start_byte) {
+    start_byte += 22; // offset for first byte of creation time
+    string date;
     date.push_back(start_byte[0]);
     date.push_back(start_byte[1]);
 
-    struct tm* create_time;
-    create_time->tm_sec  = (start_byte[1] & 0b00011111) * 2; // to the nearest 2s
-    create_time->tm_min  = (start_byte[1] >> 3) + (start_byte[0] & 0b00000111);
-    create_time->tm_hour = (start_byte[0] >> 3);
+    struct tm* mod_time;
+    time_t rawtime;
+    time(&rawtime);
+    mod_time = localtime(&rawtime);
 
-    return date;
+    // 15-11 = hour, 10-5 = min, 4-0 = sec
+    mod_time->tm_sec  = (start_byte[0] & 0b00011111) * 2; // to the nearest 2s
+    mod_time->tm_min  = ((start_byte[0] >> 5) & 0b00000111) + ((start_byte[1] & 0b00000111) << 3);
+    mod_time->tm_hour = (start_byte[1] >> 3);
+    //cout << "\t" << hour << ":" << min << ":" << sec;
+
+    start_byte += 2;
+    // 15-9 = year (0=1980), 8-5 = month, 4-0 = day
+    mod_time->tm_mday = (start_byte[0] & 0b00011111);
+    mod_time->tm_mon  = ((start_byte[0] >> 5) & 0b00000111) + ((start_byte[1] & 0b00000001) << 1);
+    mod_time->tm_mon -= 1; // because strftime() prints month 1-12
+    mod_time->tm_year = (start_byte[1] >> 1) + 80;
+    //cout << "\t" << month << "/" << day << "/" << year;
+
+    //return date;
+    return mod_time;
+}
+
+string FAT::info(int entry, char* start_byte) {
+    int offset = FAT::DIR_OFFSET + (entry * 32);
+    int cluster = get_cluster_number(entry, start_byte);
+    cout << "Directory entry offset: " << offset << endl;
+    cout << "Starting sector: " << cluster << endl;
+    return "";
+}
+
+int FAT::get_cluster_number(int entry, char* start_byte) {
+    start_byte += (entry * 32) + 26;//(FAT::DIR_OFFSET + (entry * 32)) + 26;
+    int cluster = start_byte[1] + (start_byte[0] << 8);
+    cout << "cluster for entry " << entry << ": " << cluster << endl;
+    return cluster;
 }
 
 int FAT::get_next_sector(int num, bool root_dir) {
