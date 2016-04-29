@@ -139,8 +139,7 @@ string FAT::info(int entry, char* start_byte) {
 
 int FAT::get_cluster_number(int entry, char* start_byte) {
     start_byte += (entry * 32) + 26;//(FAT::DIR_OFFSET + (entry * 32)) + 26;
-    int cluster = start_byte[1] + (start_byte[0] << 8);
-    cout << "cluster for entry " << entry << ": " << cluster << endl;
+    int cluster = start_byte[0] + (start_byte[1] << 8);
     return cluster;
 }
 

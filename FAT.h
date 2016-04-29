@@ -15,6 +15,7 @@ class FAT {
         void read_sector(int num, bool root_dir);
         int get_next_sector(int num, bool root_dir);
         void get_entries(char* fs);
+        char* open_file(std::string filename);
         std::string get_filename(int entry, char* start_byte);
         struct tm* get_modified_time(char* start_byte);
         std::string info(int entry, char* start_byte);
@@ -23,7 +24,6 @@ class FAT {
         static const int FAT_ENTRY_OFFSET;
         static const int DIR_OFFSET;
     private:
-        char* open_file(std::string filename);
 
         std::vector<DirEntry> entries;
 };

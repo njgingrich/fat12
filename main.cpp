@@ -30,22 +30,43 @@ vector<string> read_cmdline() {
     return input;
 }
 
+void prompt(string dir) {
+    cout << dir << ">";
+}
+
+bool check_commands(string cmd) {
+    if (cmd == "dir") {
+        dir();
+    } else if (cmd == "info") {
+        info();
+    } else if (cmd == "quit") {
+        return false;
+    } else {
+        cout << cmd << ": unrecognized command" << endl;
+    }
+}
+
 int main(int argc, char** argv) {
     (void)argc;
     (void)argv;
     FAT fat = FAT();
-/*    vector<string> input;
+    char* fs = fat.open_file(argv[1]);
+    vector<string> input;
     bool cont = true;
+    string directory = "/";
+
     do {
+        prompt(directory);
         input = read_cmdline();
+        cont = check_commands(input.front());
     } while (cont);
-*/
-    char* fs = fat.dir("floppy.img");
+/*
     //cout << "\n";
     fat.get_entries(fs);
     for (int i = 0; i < 10; i++) {
         fat.info(i, fs);
     }
+*/
 }
 
 
