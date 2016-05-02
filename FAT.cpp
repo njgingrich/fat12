@@ -2,6 +2,7 @@
 #include <ctime>
 #include <fcntl.h>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <string>
 #include <sys/mman.h>
@@ -14,6 +15,8 @@
 
 using std::cout;
 using std::endl;
+using std::right;
+using std::setw;
 using std::string;
 using std::time_t;
 using std::vector;
@@ -25,11 +28,22 @@ FAT::FAT() {
 
 }
 
-char* FAT::dir(string dir_name) {
-    char* fs = open_file(dir_name);
-    char* first_file_name = fs + (9728);
-    cout << get_filename(0, first_file_name);
-    return first_file_name;
+void FAT::dir(string dir_name, char* fs) {
+    char* file_ptr = fs + (9728);
+    if (file_ptr) {}
+    if (dir_name == "") {
+        dir_name = "/";
+    }
+
+    for (DirEntry e : entries) {
+        cout << e.modified_date << "  " << (e.is_dir ? "<DIR>" : "\t") << "\t";
+        if (e.is_dir) {
+            cout << "\t";
+        } else {
+            cout << setw(8) << right << e.filesize;
+        }
+        cout << "  " << e.filename << endl;
+    }
 }
 
 char* FAT::open_file(std::string filename) {
@@ -58,16 +72,27 @@ void FAT::read_sector(int num, bool root_dir) {
  * Initialize the program by putting the root directory entries into
  * a vector to make it simpler to traverse the directory entries later.
  */
-void FAT::get_entries(char* fs) {
-    cout << endl;
+void FAT::init_entries(char* fs) {
     struct tm* t;
-    for (int i = 0; i < 30; i++) {
-        char* entry_start = fs + (i * 32);
-        cout << "entry " << i << ": " << get_filename(i, entry_start) << endl;
-        t = get_modified_time(entry_start);
+    char* file_ptr = fs + (9728);
+    string filename;
+    string modified_date;
+
+    for (int entry = 0; entry < 224; entry++) {
+        filename = get_filename(entry, file_ptr);
+        if (filename == "") {
+            break;
+        }
         char buffer[80];
+        t = get_modified_time(entry, file_ptr);
         strftime(buffer, 80, "%m/%d/%Y  %H:%M:%S", t);
+        int filesize = get_filesize(entry, file_ptr);
+        bool is_dir = is_directory(entry, file_ptr);/*
+        cout << "name: " << filename << endl;
         cout << "\t" << buffer << endl;
+        cout << "\t" << filesize << endl;
+        cout << "\t" << (is_dir ? "yes" : "no") << endl;*/
+        entries.push_back(DirEntry(filename, string(buffer), 0, is_dir, 0, filesize));
     }
 }
 
@@ -77,11 +102,14 @@ void FAT::get_entries(char* fs) {
  */
 string FAT::get_filename(int entry, char* start_byte) {
     start_byte += (entry * 32);
-    string filename;
+    string filename = "";
     for (int i = 0; i < 8; i++) {
-        if (start_byte[i] != ' ') {
+        if (start_byte[i] != ' ' && start_byte[i] != 0) {
             filename.push_back(start_byte[i]);
         }
+    }
+    if (is_directory(0, start_byte) || filename.empty()) {
+        return filename;
     }
     filename.push_back('.');
     for (int i = 8; i < 11; i++) {
@@ -92,19 +120,13 @@ string FAT::get_filename(int entry, char* start_byte) {
     return filename;
 }
 
-/**
- * All it does is take something like this:
- *     00001001 01101100
- * And makes it this:
- *     2/15/2013  9:53:12
- */
+bool FAT::is_directory(int entry, char* entry_ptr) {
+    entry_ptr += (entry * 32) + 11;
+    return (entry_ptr[0] == 16);
+}
 
-
-struct tm* FAT::get_modified_time(char* start_byte) {
-    start_byte += 22; // offset for first byte of creation time
-    string date;
-    date.push_back(start_byte[0]);
-    date.push_back(start_byte[1]);
+struct tm* FAT::get_modified_time(int entry, char* start_byte) {
+    start_byte += (entry * 32) + 22; // offset for first byte of creation time
 
     struct tm* mod_time;
     time_t rawtime;
@@ -129,7 +151,9 @@ struct tm* FAT::get_modified_time(char* start_byte) {
     return mod_time;
 }
 
-string FAT::info(int entry, char* start_byte) {
+string FAT::info(string name, char* start_byte) {
+    int entry = 4; // todo remove
+    if (name == "") {}
     int offset = FAT::DIR_OFFSET + (entry * 32);
     int cluster = get_cluster_number(entry, start_byte);
     cout << "Directory entry offset: " << offset << endl;
@@ -138,9 +162,20 @@ string FAT::info(int entry, char* start_byte) {
 }
 
 int FAT::get_cluster_number(int entry, char* start_byte) {
-    start_byte += (entry * 32) + 26;//(FAT::DIR_OFFSET + (entry * 32)) + 26;
+    start_byte += (entry * 32) + 26; //(FAT::DIR_OFFSET + (entry * 32)) + 26;
     int cluster = start_byte[0] + (start_byte[1] << 8);
     return cluster;
+}
+
+int FAT::get_filesize(int entry, char* start_byte) {
+    start_byte += (entry * 32) + 28; // offset for 4 bytes of filesize
+    uint8_t fourth = start_byte[0];
+    uint8_t third  = start_byte[1];
+    uint8_t second = start_byte[2];
+    uint8_t first  = start_byte[3];
+    int filesize = fourth + (third << 8) + (second << 16) + (first << 24);
+
+    return filesize;
 }
 
 int FAT::get_next_sector(int num, bool root_dir) {

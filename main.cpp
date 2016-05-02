@@ -34,31 +34,40 @@ void prompt(string dir) {
     cout << dir << ">";
 }
 
-bool check_commands(string cmd) {
+bool check_commands(string cmd, vector<string> args, FAT fat, char* fs) {
+    if (args.empty()) { // fill the args array with empty data
+        args.push_back("");
+        args.push_back("");
+    }
+
     if (cmd == "dir") {
-        dir();
+        fat.dir(args.front(), fs);
     } else if (cmd == "info") {
-        info();
+        fat.info(args.front(), fs);
     } else if (cmd == "quit") {
         return false;
     } else {
         cout << cmd << ": unrecognized command" << endl;
     }
+    return true;
 }
 
 int main(int argc, char** argv) {
     (void)argc;
-    (void)argv;
     FAT fat = FAT();
     char* fs = fat.open_file(argv[1]);
+    fat.init_entries(fs);
     vector<string> input;
     bool cont = true;
     string directory = "/";
+    string command = "";
 
     do {
         prompt(directory);
         input = read_cmdline();
-        cont = check_commands(input.front());
+        command = input.front();
+        input.erase(input.begin());
+        cont = check_commands(command, input, fat, fs);
     } while (cont);
 /*
     //cout << "\n";

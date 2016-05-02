@@ -1,5 +1,5 @@
-#ifndef __FAT_DRIVER__
-#define __FAT_DRIVER__
+#ifndef __FAT__
+#define __FAT__
 
 #include <ctime>
 #include <iostream>
@@ -11,21 +11,23 @@
 class FAT {
     public:
         FAT();
-        char* dir(std::string dir_name);
+        void dir(std::string dir_name, char* fs);
         void read_sector(int num, bool root_dir);
         int get_next_sector(int num, bool root_dir);
-        void get_entries(char* fs);
+        void init_entries(char* fs);
         char* open_file(std::string filename);
         std::string get_filename(int entry, char* start_byte);
-        struct tm* get_modified_time(char* start_byte);
-        std::string info(int entry, char* start_byte);
+        struct tm* get_modified_time(int entry, char* start_byte);
+        std::string info(std::string name, char* start_byte);
         int get_cluster_number(int entry, char* start_byte);
+        bool is_directory(int entry, char* entry_ptr);
+        int get_filesize(int entry, char* start_byte);
 
         static const int FAT_ENTRY_OFFSET;
         static const int DIR_OFFSET;
     private:
-
         std::vector<DirEntry> entries;
+
 };
 
 /**
