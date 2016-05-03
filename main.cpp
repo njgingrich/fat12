@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
         } else if (cmd == Command::DEL) {
             fat.del(input.front());
         } else if (cmd == Command::DIR) {
-            fat.dir(input.front(), directory);
+            fat.dir(input.front(), fs);
         } else if (cmd == Command::HELP) {
             fat.help();
         } else if (cmd == Command::INFO) {

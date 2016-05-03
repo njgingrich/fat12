@@ -15,11 +15,12 @@ class FAT {
         std::string cd(std::string dir_name, char* entry_ptr);
         void        copy(std::string source, std::string dest);
         void        del(std::string filename);
-        void        dir(std::string dir_name, std::string cur_dir);
+        void        dir(std::string dir_name, char* entry_ptr);
         void        help();
         void        info(std::string name);
         void        init_entries(char* fs, int max_entries, bool root_dir);
         char*       open_file(std::string filename);
+        void        set_cur_dir(std::string new_dir);
 
         static const int ENTRY_OFFSET;
         static const int DATA_OFFSET;
@@ -32,10 +33,12 @@ class FAT {
         struct tm*  get_modified_time(int entry, char* start_byte);
         int         get_next_cluster(int entry, bool root_dir, char* entry_ptr);
         bool        is_directory(int entry, char* entry_ptr);
+        void        print_dir(std::vector<DirEntry> entries);
         void        read_cluster(int num, char* entry_ptr);
 
         std::vector<DirEntry> root_entries;
         std::vector<DirEntry> cur_entries;
+        std::string cur_dir;
 };
 
 /**

@@ -27,11 +27,10 @@ const int FAT::DATA_OFFSET = 15872;
 const int FAT::DIR_OFFSET = 9728;
 
 FAT::FAT() {
-
+    cur_dir = "/";
 }
 
 void FAT::cat(string filename, char* entry_ptr) {
-    if (filename == "") {}
     int next_cluster = 0;
     for (uint16_t i = 0; i < cur_entries.size(); i++) {
         DirEntry e = cur_entries.at(i);
@@ -54,15 +53,24 @@ void FAT::cat(string filename, char* entry_ptr) {
 }
 
 string FAT::cd(string dir_name, char* entry_ptr) {
-    std::stringstream ss(dir_name);
+    if (dir_name.empty()) {
+        cout << "Usage: cd directory" << endl;
+        return cur_dir;
+    }
+    string path = dir_name; // assume dir_name is an absolute path
+    if (dir_name[0] != '/') {
+        path = cur_dir + dir_name; // make dir an absolute path
+    }
+    cur_dir = path;
+    std::stringstream ss(path);
     vector<string> directories;
     string d;
     while (std::getline(ss, d, '/')) {
         directories.push_back(d);
     }
 
-    string dir = "/";
     int cluster = 0;
+    string dir = "/";
     for (uint16_t i = 0; i < directories.size(); i++) {
         for (uint16_t entry = 0; entry < cur_entries.size(); entry++) {
             DirEntry e = cur_entries.at(entry);
@@ -82,7 +90,7 @@ string FAT::cd(string dir_name, char* entry_ptr) {
 
         init_entries((entry_ptr + FAT::DATA_OFFSET + (cluster * 512)), 16, false);
     }
-    return dir_name;
+    return path;
 }
 
 void FAT::copy(string source, string dest) {
@@ -95,13 +103,43 @@ void FAT::del(string filename) {
     return;
 }
 
-void FAT::dir(string dir_name, string cur_dir) {
-    string pwd = dir_name;
-    if (dir_name == "") {
-        pwd = cur_dir;;
+void FAT::dir(string dir_name, char* entry_ptr) {
+    string path = dir_name; // assume dir_name is an absolute path
+    if (dir_name[0] != '/') {
+        path = cur_dir + dir_name; // make dir an absolute path
+    }
+    std::stringstream ss(path);
+    vector<string> directories;
+    string d;
+    while (std::getline(ss, d, '/')) {
+        directories.push_back(d);
     }
 
-    for (DirEntry e : cur_entries) {
+    int cluster = 0;
+    for (uint16_t i = 0; i < directories.size(); i++) {
+        for (uint16_t entry = 0; entry < cur_entries.size(); entry++) {
+            DirEntry e = cur_entries.at(entry);
+            if (e.filename == directories.at(i)) {
+                if (!e.is_dir) {
+                    cout << dir_name << " is not a directory" << endl;
+                    return;
+                }
+                cluster = e.cluster;
+                if (i == 0) {
+                    init_entries(entry_ptr + FAT::DIR_OFFSET, 224, true);
+                } else {
+                    init_entries(entry_ptr + FAT::DATA_OFFSET + (cluster * 512), 16, true);
+                }
+                break;
+            }
+        }
+    }
+
+    print_dir(cur_entries);
+}
+
+void FAT::print_dir(vector<DirEntry> entries) {
+    for (DirEntry e : entries) {
         cout << e.modified_date << "  " << (e.is_dir ? "<DIR>" : "\t") << "\t";
         if (e.is_dir) {
             cout << "\t";
@@ -342,6 +380,10 @@ void FAT::read_cluster(int num, char* entry_ptr) {
         }
         cout << entry_ptr[i];
     }
+}
+
+void FAT::set_cur_dir(string new_dir) {
+    cur_dir = new_dir;
 }
 
 
