@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -32,8 +33,8 @@ FAT::FAT() {
 void FAT::cat(string filename, char* entry_ptr) {
     if (filename == "") {}
     int next_cluster = 0;
-    for (uint16_t i = 0; i < entries.size(); i++) {
-        DirEntry e = entries.at(i);
+    for (uint16_t i = 0; i < cur_entries.size(); i++) {
+        DirEntry e = cur_entries.at(i);
         if (e.filename == filename) {
             next_cluster = e.cluster;
             break;
@@ -52,8 +53,35 @@ void FAT::cat(string filename, char* entry_ptr) {
     return;
 }
 
-string FAT::cd(string dir_name) {
-    if (dir_name == "") {}
+string FAT::cd(string dir_name, char* entry_ptr) {
+    std::stringstream ss(dir_name);
+    vector<string> directories;
+    string d;
+    while (std::getline(ss, d, '/')) {
+        directories.push_back(d);
+    }
+
+    string dir = "/";
+    int cluster = 0;
+    for (uint16_t i = 0; i < directories.size(); i++) {
+        for (uint16_t entry = 0; entry < cur_entries.size(); entry++) {
+            DirEntry e = cur_entries.at(entry);
+            if (e.filename == directories.at(i)) {
+                if (!e.is_dir) {
+                    cout << dir_name << " is not a directory" << endl;
+                    return ""; // TODO return correct dir name (current dir)
+                }
+                dir.append(e.filename);
+                cluster = e.cluster;
+            }
+        }
+        if (dir.empty()) {
+            cout << "The directory " << dir_name << " cannot be found" << endl;
+            return ""; // TODO
+        }
+
+        init_entries((entry_ptr + FAT::DATA_OFFSET + (cluster * 512)), 16, false);
+    }
     return dir_name;
 }
 
@@ -67,12 +95,13 @@ void FAT::del(string filename) {
     return;
 }
 
-void FAT::dir(string dir_name) {
+void FAT::dir(string dir_name, string cur_dir) {
+    string pwd = dir_name;
     if (dir_name == "") {
-        dir_name = "/";
+        pwd = cur_dir;;
     }
 
-    for (DirEntry e : entries) {
+    for (DirEntry e : cur_entries) {
         cout << e.modified_date << "  " << (e.is_dir ? "<DIR>" : "\t") << "\t";
         if (e.is_dir) {
             cout << "\t";
@@ -81,6 +110,7 @@ void FAT::dir(string dir_name) {
         }
         cout << "  " << e.filename << endl;
     }
+    // TODO: print bytes free
 }
 
 void FAT::help() {
@@ -131,13 +161,14 @@ char* FAT::open_file(std::string filename) {
  * Initialize the program by putting the root directory entries into
  * a vector to make it simpler to traverse the directory entries later.
  */
-void FAT::init_entries(char* fs) {
+void FAT::init_entries(char* fs, int max_entries, bool root_dir) {
     struct tm* t;
-    char* file_ptr = fs + (9728);
+    char* file_ptr = fs;
     string filename;
     string modified_date;
+    cur_entries.clear();
 
-    for (int entry = 0; entry < 224; entry++) {
+    for (int entry = 0; entry < max_entries; entry++) {
         filename = get_filename(entry, file_ptr);
         if (filename == "") {
             break;
@@ -148,15 +179,20 @@ void FAT::init_entries(char* fs) {
         int filesize = get_filesize(entry, file_ptr);
         bool is_dir = is_directory(entry, file_ptr);
         int first_cluster = get_first_cluster(entry, file_ptr);
-        /*
+/*
         cout << "name: " << filename << endl;
         cout << "\t" << buffer << endl;
         cout << "\t" << filesize << endl;
         cout << "\t" << (is_dir ? "yes" : "no") << endl;
-        */
-        entries.push_back(
+*/
+        cur_entries.push_back(
+            DirEntry(filename, string(buffer), 0, is_dir, first_cluster, filesize)
+        );
+        if (root_dir) {
+            root_entries.push_back(
                 DirEntry(filename, string(buffer), 0, is_dir, first_cluster, filesize)
             );
+        }
     }
 }
 
@@ -220,8 +256,8 @@ void FAT::info(string name) {
     int offset      = -1;
     string filename = "";
 
-    for (uint8_t i = 0; i < entries.size(); i++) {
-        DirEntry e = entries.at(i);
+    for (uint8_t i = 0; i < cur_entries.size(); i++) {
+        DirEntry e = cur_entries.at(i);
 
         if (e.filename == name) {
             filename = e.filename;

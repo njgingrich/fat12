@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
     (void)argc;
     FAT fat = FAT();
     char* fs = fat.open_file(argv[1]);
-    fat.init_entries(fs);
+    fat.init_entries((fs + FAT::DIR_OFFSET), 224, true);
     vector<string> input;
     string directory = "/";
     string command = "";
@@ -77,13 +77,13 @@ int main(int argc, char** argv) {
         if (cmd == Command::CAT) {
             fat.cat(input.front(), fs);
         } else if (cmd == Command::CD) {
-            directory = fat.cd(input.front());
+            directory = fat.cd(input.front(), fs);
         } else if (cmd == Command::COPY) {
             fat.copy(input.front(), input.at(1));
         } else if (cmd == Command::DEL) {
             fat.del(input.front());
         } else if (cmd == Command::DIR) {
-            fat.dir(input.front());
+            fat.dir(input.front(), directory);
         } else if (cmd == Command::HELP) {
             fat.help();
         } else if (cmd == Command::INFO) {
