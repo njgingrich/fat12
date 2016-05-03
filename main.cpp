@@ -72,18 +72,24 @@ int main(int argc, char** argv) {
         prompt(directory);
         input = read_cmdline();
         command = input.front();
-        input.erase(input.begin());
+
         Command cmd = check_commands(command);
         if (cmd == Command::CAT) {
-            fat.cat(input.front(), fs);
+            fat.cat(input.at(1), fs);
         } else if (cmd == Command::CD) {
-            directory = fat.cd(input.front(), fs);
+            if (input.size() < 2) {
+                input.push_back("");
+            }
+            directory = fat.cd(input.at(1), fs);
         } else if (cmd == Command::COPY) {
-            fat.copy(input.front(), input.at(1));
+            fat.copy(input.at(1), input.at(2));
         } else if (cmd == Command::DEL) {
-            fat.del(input.front());
+            fat.del(input.at(2));
         } else if (cmd == Command::DIR) {
-            fat.dir(input.front(), fs);
+            if (input.size() < 2) {
+                input.push_back("");
+            }
+            fat.dir(input.at(1), fs);
         } else if (cmd == Command::HELP) {
             fat.help();
         } else if (cmd == Command::INFO) {
