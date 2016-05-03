@@ -43,7 +43,7 @@ bool check_commands(string cmd, vector<string> args, FAT fat, char* fs) {
     if (cmd == "dir") {
         fat.dir(args.front(), fs);
     } else if (cmd == "info") {
-        fat.info(args.front(), fs);
+        fat.info(args.front());
     } else if (cmd == "quit") {
         return false;
     } else {

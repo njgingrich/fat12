@@ -87,12 +87,17 @@ void FAT::init_entries(char* fs) {
         t = get_modified_time(entry, file_ptr);
         strftime(buffer, 80, "%m/%d/%Y  %H:%M:%S", t);
         int filesize = get_filesize(entry, file_ptr);
-        bool is_dir = is_directory(entry, file_ptr);/*
+        bool is_dir = is_directory(entry, file_ptr);
+        int first_cluster = get_first_cluster(entry, file_ptr);
+        /*
         cout << "name: " << filename << endl;
         cout << "\t" << buffer << endl;
         cout << "\t" << filesize << endl;
-        cout << "\t" << (is_dir ? "yes" : "no") << endl;*/
-        entries.push_back(DirEntry(filename, string(buffer), 0, is_dir, 0, filesize));
+        cout << "\t" << (is_dir ? "yes" : "no") << endl;
+        */
+        entries.push_back(
+                DirEntry(filename, string(buffer), 0, is_dir, first_cluster, filesize)
+            );
     }
 }
 
@@ -151,19 +156,33 @@ struct tm* FAT::get_modified_time(int entry, char* start_byte) {
     return mod_time;
 }
 
-string FAT::info(string name, char* start_byte) {
-    int entry = 4; // todo remove
-    if (name == "") {}
-    int offset = FAT::DIR_OFFSET + (entry * 32);
-    int cluster = get_cluster_number(entry, start_byte);
-    cout << "Directory entry offset: " << offset << endl;
-    cout << "Starting sector: " << cluster << endl;
-    return "";
+void FAT::info(string name) {
+    int cluster     = -1;
+    int offset      = -1;
+    string filename = "";
+
+    for (uint8_t i = 0; i < entries.size(); i++) {
+        DirEntry e = entries.at(i);
+
+        if (e.filename == name) {
+            filename = e.filename;
+            cluster = e.cluster;
+            offset = FAT::DIR_OFFSET + (i * 32);
+        }
+    }
+    if (filename.empty()) {
+        cout << "The file or directory " << name << " does not exist" << endl;
+    } else {
+        cout << "Directory entry offset: " << offset << endl;
+        cout << "Starting sector: " << cluster << endl;
+    }
 }
 
-int FAT::get_cluster_number(int entry, char* start_byte) {
-    start_byte += (entry * 32) + 26; //(FAT::DIR_OFFSET + (entry * 32)) + 26;
-    int cluster = start_byte[0] + (start_byte[1] << 8);
+int FAT::get_first_cluster(int entry, char* start_byte) {
+    start_byte += (entry * 32) + 26;
+    uint8_t second = start_byte[0];
+    uint8_t first  = start_byte[1];
+    int cluster = second + (first << 8);
     return cluster;
 }
 

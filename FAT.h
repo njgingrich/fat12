@@ -18,8 +18,8 @@ class FAT {
         char* open_file(std::string filename);
         std::string get_filename(int entry, char* start_byte);
         struct tm* get_modified_time(int entry, char* start_byte);
-        std::string info(std::string name, char* start_byte);
-        int get_cluster_number(int entry, char* start_byte);
+        void info(std::string name);
+        int get_first_cluster(int entry, char* start_byte);
         bool is_directory(int entry, char* entry_ptr);
         int get_filesize(int entry, char* start_byte);
 
