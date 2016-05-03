@@ -11,21 +11,29 @@
 class FAT {
     public:
         FAT();
-        void dir(std::string dir_name, char* fs);
-        void read_sector(int num, bool root_dir);
-        int get_next_sector(int num, bool root_dir);
-        void init_entries(char* fs);
-        char* open_file(std::string filename);
-        std::string get_filename(int entry, char* start_byte);
-        struct tm* get_modified_time(int entry, char* start_byte);
-        void info(std::string name);
-        int get_first_cluster(int entry, char* start_byte);
-        bool is_directory(int entry, char* entry_ptr);
-        int get_filesize(int entry, char* start_byte);
+        void        cat(std::string filename, char* entry_ptr);
+        std::string cd(std::string dir_name);
+        void        copy(std::string source, std::string dest);
+        void        del(std::string filename);
+        void        dir(std::string dir_name);
+        void        help();
+        void        info(std::string name);
+        void        init_entries(char* fs);
+        char*       open_file(std::string filename);
 
-        static const int FAT_ENTRY_OFFSET;
+        static const int ENTRY_OFFSET;
+        static const int DATA_OFFSET;
         static const int DIR_OFFSET;
     private:
+        uint16_t    get_cluster(uint8_t byte1, uint8_t byte2, bool even_entry);
+        std::string get_filename(int entry, char* start_byte);
+        int         get_filesize(int entry, char* start_byte);
+        int         get_first_cluster(int entry, char* start_byte);
+        struct tm*  get_modified_time(int entry, char* start_byte);
+        int         get_next_cluster(int entry, bool root_dir, char* entry_ptr);
+        bool        is_directory(int entry, char* entry_ptr);
+        void        read_cluster(int num, char* entry_ptr);
+
         std::vector<DirEntry> entries;
 
 };

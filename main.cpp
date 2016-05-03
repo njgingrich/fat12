@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "Command.h"
 #include "FAT.h"
 
 using std::cout;
@@ -34,22 +35,27 @@ void prompt(string dir) {
     cout << dir << ">";
 }
 
-bool check_commands(string cmd, vector<string> args, FAT fat, char* fs) {
-    if (args.empty()) { // fill the args array with empty data
-        args.push_back("");
-        args.push_back("");
-    }
-
-    if (cmd == "dir") {
-        fat.dir(args.front(), fs);
+Command check_commands(string cmd) {
+    if (cmd == "cat") {
+        return Command::CAT;
+    } else if (cmd == "cd") {
+        return Command::CD;
+    } else if (cmd == "copy") {
+        return Command::COPY;
+    } else if (cmd == "del") {
+        return Command::DEL;
+    } else if (cmd == "dir") {
+        return Command::DIR;
+    } else if (cmd == "help") {
+        return Command::HELP;
     } else if (cmd == "info") {
-        fat.info(args.front());
+        return Command::INFO;
     } else if (cmd == "quit") {
-        return false;
+        return Command::QUIT;
     } else {
         cout << cmd << ": unrecognized command" << endl;
+        return Command::UNKNOWN;
     }
-    return true;
 }
 
 int main(int argc, char** argv) {
@@ -58,16 +64,33 @@ int main(int argc, char** argv) {
     char* fs = fat.open_file(argv[1]);
     fat.init_entries(fs);
     vector<string> input;
-    bool cont = true;
     string directory = "/";
     string command = "";
+    bool cont = true;
 
     do {
         prompt(directory);
         input = read_cmdline();
         command = input.front();
         input.erase(input.begin());
-        cont = check_commands(command, input, fat, fs);
+        Command cmd = check_commands(command);
+        if (cmd == Command::CAT) {
+            fat.cat(input.front(), fs);
+        } else if (cmd == Command::CD) {
+            directory = fat.cd(input.front());
+        } else if (cmd == Command::COPY) {
+            fat.copy(input.front(), input.at(1));
+        } else if (cmd == Command::DEL) {
+            fat.del(input.front());
+        } else if (cmd == Command::DIR) {
+            fat.dir(input.front());
+        } else if (cmd == Command::HELP) {
+            fat.help();
+        } else if (cmd == Command::INFO) {
+            fat.info(input.front());
+        } else if (cmd == Command::QUIT) {
+            cont = false;
+        }
     } while (cont);
 /*
     //cout << "\n";

@@ -21,16 +21,53 @@ using std::string;
 using std::time_t;
 using std::vector;
 
-const int FAT::FAT_ENTRY_OFFSET = 512;
+const int FAT::ENTRY_OFFSET = 512;
+const int FAT::DATA_OFFSET = 15872;
 const int FAT::DIR_OFFSET = 9728;
 
 FAT::FAT() {
 
 }
 
-void FAT::dir(string dir_name, char* fs) {
-    char* file_ptr = fs + (9728);
-    if (file_ptr) {}
+void FAT::cat(string filename, char* entry_ptr) {
+    if (filename == "") {}
+    int next_cluster = 0;
+    for (uint16_t i = 0; i < entries.size(); i++) {
+        DirEntry e = entries.at(i);
+        if (e.filename == filename) {
+            next_cluster = e.cluster;
+            break;
+        }
+    }
+    // TODO: check if directory
+    if (next_cluster == 0) {
+        cout << filename << ": no such file or directory" << endl;
+        return;
+    }
+    while (next_cluster != 4095) {
+        read_cluster(next_cluster, entry_ptr);
+        next_cluster = get_next_cluster(next_cluster, false, entry_ptr);
+    }
+    cout << endl;
+    return;
+}
+
+string FAT::cd(string dir_name) {
+    if (dir_name == "") {}
+    return dir_name;
+}
+
+void FAT::copy(string source, string dest) {
+    if (source == "" || dest == "") {}
+    return;
+}
+
+void FAT::del(string filename) {
+    if (filename == "") {}
+    return;
+}
+
+void FAT::dir(string dir_name) {
     if (dir_name == "") {
         dir_name = "/";
     }
@@ -44,6 +81,33 @@ void FAT::dir(string dir_name, char* fs) {
         }
         cout << "  " << e.filename << endl;
     }
+}
+
+void FAT::help() {
+    cout << "Available commands:" << endl;
+    cout << "dir [directory]" << endl;
+    cout << "displays the contents of the named directory, or the current directory ";
+    cout << "if directory is omitted" << endl;
+    cout << endl;
+    cout << "cd directory" << endl;
+    cout << "changes the current directory in the floppy image to the named directory" << endl;
+    cout << endl;
+    cout << "info file" << endl;
+    cout << "displays the starting sector and the directory entry offset for the named ";
+    cout << "file/directory" << endl;
+    cout << endl;
+    cout << "cat file" << endl;
+    cout << "displays the contents of the named file" << endl;
+    cout << endl;
+    cout << "del file" << endl;
+    cout << "deletes the named file from the floppy disk image" << endl;
+    cout << endl;
+    cout << "copy file destination" << endl;
+    cout << "copies the named file into the destination, which can specify either a filename ";
+    cout << "or a directory" << endl;
+    cout << endl;
+    cout << "quit" << endl;
+    cout << "terminates the program" << endl;
 }
 
 char* FAT::open_file(std::string filename) {
@@ -61,11 +125,6 @@ char* FAT::open_file(std::string filename) {
         exit(-1);
     }
     return fs;
-}
-
-void FAT::read_sector(int num, bool root_dir) {
-    if (num) {}
-    if (root_dir) {}
 }
 
 /**
@@ -197,11 +256,55 @@ int FAT::get_filesize(int entry, char* start_byte) {
     return filesize;
 }
 
-int FAT::get_next_sector(int num, bool root_dir) {
+int FAT::get_next_cluster(int entry, bool root_dir, char* entry_ptr) {
     if (root_dir) {
-        return num + 1;
+        return entry + 1;
     } else {
-        return -1; // TODO
+        entry_ptr += FAT::ENTRY_OFFSET;
+        // first byte needed for entry is (3/2) * entry
+        entry_ptr += (entry / 2) * 3;
+        if (entry % 2 != 0) {
+            entry_ptr += 1;
+        }
+        uint8_t byte1 = entry_ptr[0];
+        uint8_t byte2 = entry_ptr[1];
+        // cout << "byte1: " << +byte1 << " - byte2: " << +byte2 << endl;
+        uint16_t cluster = 1;
+        cluster = get_cluster(byte1, byte2, (entry % 2 == 0));
+        return cluster;
+    }
+}
+
+uint16_t FAT::get_cluster(uint8_t byte1, uint8_t byte2, bool even_entry) {
+    /* even entry:
+     * abcdefgh ijklmnop
+     * mnopabcdefgh
+     *
+     * odd entry:
+     * abcdefgh ijklmnop
+     * ijklmnopabcd
+     */
+
+    uint16_t cluster = 0;
+    if (even_entry) {
+        // we want the right most 4 bits of the 2nd byte first
+        cluster = byte1 + ((byte2 & 0x0F) << 8);
+    } else {
+        // we want the 2nd byte first then the first 4 bytes of byte 1
+        cluster = byte2;
+        cluster <<= 4;
+        cluster += ((byte1 >> 4) & 0x0F);
+    }
+    return cluster;
+}
+
+void FAT::read_cluster(int num, char* entry_ptr) {
+    entry_ptr += FAT::DATA_OFFSET + (num * 512);
+    for (int i = 0; i < 512; i++) {
+        if (entry_ptr[i] == 0) {
+            break;
+        }
+        cout << entry_ptr[i];
     }
 }
 
