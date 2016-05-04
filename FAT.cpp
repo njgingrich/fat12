@@ -196,6 +196,7 @@ void FAT::dir(string dir_name, char* entry_ptr) {
 
     int cluster = 0;
     vector<DirEntry> entries;
+    string dir = "";
     for (uint16_t i = 0; i < directories.size(); i++) {
         if (i == 0) {
             for (uint16_t entry = 0; entry < root_entries.size(); entry++) {
@@ -206,6 +207,7 @@ void FAT::dir(string dir_name, char* entry_ptr) {
                         return;
                     }
                     break;
+                    dir = e.filename;
                 }
             }
             entries = init_entries(entry_ptr + FAT::DIR_OFFSET, 224, true);
@@ -217,12 +219,17 @@ void FAT::dir(string dir_name, char* entry_ptr) {
                         cout << dir_name << " is not a directory" << endl;
                         return;
                     }
+                    dir = e.filename;
                     cluster = e.cluster;
                     entries = init_entries(entry_ptr + FAT::DATA_OFFSET + (cluster * 512), 16, false);
                     break;
                 }
             }
         }
+    }
+    if (dir.empty() && dir_name != "") {
+        cout << dir_name << " does not exist." << endl;
+        return;
     }
     print_dir(entries);
 }
