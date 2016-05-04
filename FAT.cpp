@@ -80,6 +80,7 @@ string FAT::cd(string dir_name, char* entry_ptr) {
     int cluster = 0;
     string dir = "";
     for (uint16_t i = 1; i < directories.size(); i++) {
+        dir = "";
         for (uint16_t entry = 0; entry < cur_entries.size(); entry++) {
             DirEntry e = cur_entries.at(entry);
             if (e.filename == directories.at(i)) {
