@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
             }
             directory = fat.cd(input.at(1), fs);
         } else if (cmd == Command::COPY) {
-            fat.copy(input.at(1), input.at(2));
+            fat.copy(input.at(1), input.at(2), fs);
         } else if (cmd == Command::DEL) {
             fat.del(input.at(2));
         } else if (cmd == Command::DIR) {

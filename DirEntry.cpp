@@ -20,3 +20,7 @@ DirEntry::DirEntry(
     this->cluster = cluster;
     this->filesize = filesize;
 }
+
+DirEntry::DirEntry() {
+
+}

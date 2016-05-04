@@ -15,6 +15,7 @@ class DirEntry {
             int cluster,
             int filesize
         );
+        DirEntry();
         std::string filename;
         std::string modified_date;
         int attributes;
