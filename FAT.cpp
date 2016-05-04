@@ -511,7 +511,7 @@ void FAT::set_cluster(int val, char* entry_ptr, bool even_entry) {
 }
 
 void FAT::read_cluster(int num, char* entry_ptr) {
-    entry_ptr += FAT::ENTRY_OFFSET + (num * 512);
+    entry_ptr += FAT::DATA_OFFSET + (num * 512);
     for (int i = 0; i < 512; i++) {
         if (entry_ptr[i] == 0) {
             break;
