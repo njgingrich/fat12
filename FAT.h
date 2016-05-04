@@ -39,8 +39,9 @@ class FAT {
         void        read_cluster(int num, char* entry_ptr);
         void        set_cluster(int val, char* entry_ptr, bool even_entry);
         void        update_fat(int entry, int next_entry, char* entry_ptr);
-        void        insert_entry(std::string filename, std::string modified_date, int attributes,
-                                 bool is_dir, int cluster, int filesize);
+        void        insert_entry(std::string filename, std::string modified_date,
+                                 int attributes, bool is_dir, int cluster, int filesize,
+                                 char* entry_ptr, char* src_ptr);
 
         std::vector<DirEntry> root_entries;
         std::vector<DirEntry> cur_entries;

@@ -119,6 +119,7 @@ void FAT::copy(string source, string dest, char* entry_ptr) {
     vector<DirEntry> entries;
     int cluster = 0;
     DirEntry src_entry;
+    int entry_num;
     for (uint16_t i = 0; i < source_dir.size(); i++) {
         if (i == 0) {
             for (uint16_t entry = 0; entry < root_entries.size(); entry++) {
@@ -133,6 +134,7 @@ void FAT::copy(string source, string dest, char* entry_ptr) {
                 DirEntry e = entries.at(entry);
                 if (e.filename == source_dir.at(i)) {
                     cluster = e.cluster;
+                    entry_num = entry;
                     entries = init_entries(entry_ptr + FAT::DATA_OFFSET + (cluster * 512), 16, false);
                     break;
                 }
@@ -156,9 +158,10 @@ void FAT::copy(string source, string dest, char* entry_ptr) {
     }
     update_fat(dest_clusters.back(), 4095, f_ptr); // end of clusters
 
-
+    char* src_ptr = f_ptr + FAT::DIR_OFFSET + (entry_num*32);
     insert_entry(dest, src_entry.modified_date, src_entry.attributes, src_entry.is_dir,
-                 dest_clusters.front(), src_entry.filesize);
+                 dest_clusters.front(), src_entry.filesize, f_ptr, src_ptr);
+    cout << "File successfully copied" << endl;
 }
 
 void FAT::update_fat(int entry, int next_entry, char* entry_ptr) {
@@ -276,7 +279,7 @@ void FAT::help() {
 }
 
 char* FAT::open_file(std::string filename) {
-    int input_file = open(filename.c_str(), O_RDONLY);
+    int input_file = open(filename.c_str(), O_RDWR);
     struct stat file_info;
     if (stat(filename.c_str(), &file_info) != 0) {
         perror("Opening input file");
@@ -284,7 +287,7 @@ char* FAT::open_file(std::string filename) {
     }
     int file_size = file_info.st_size;
     char* fs = (char*)
-    mmap(NULL, file_size, PROT_READ|PROT_WRITE, MAP_PRIVATE, input_file, 0);
+    mmap(NULL, file_size, PROT_READ|PROT_WRITE, MAP_SHARED, input_file, 0);
     if (fs == MAP_FAILED) {
         perror("mmap");
         exit(-1);
@@ -526,11 +529,30 @@ void FAT::set_cur_dir(string new_dir) {
 }
 
 void FAT::insert_entry(string filename, string modified_date, int attributes,
-                       bool is_dir, int cluster, int filesize) {
-    cout << "inserting entry " << filename << endl;
+                       bool is_dir, int cluster, int filesize, char* entry_ptr, char* src_ptr) {
     root_entries.push_back(
         DirEntry(filename, modified_date, attributes, is_dir, cluster, filesize)
     );
+    entry_ptr += FAT::DIR_OFFSET;
+    for (int entry = 0; entry < 224; entry++) {
+        if (entry_ptr[(entry*32)] == 0) {
+
+            for (int i = 0; i < 32; i++) {
+                if (i < 8) {
+                    if (filename[i] == '.') {
+                        entry_ptr[(entry*32)+i] = ' ';
+                    } else {
+                        entry_ptr[(entry*32)+i] = filename[i];
+                    }
+                } else if (i < 11) {
+                    entry_ptr[(entry*32)+i] = filename[i+1];
+                } else {
+                    entry_ptr[(entry*32)+i] = src_ptr[i];
+                }
+            }
+            break;
+        }
+    }
 }
 
 
