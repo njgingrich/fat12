@@ -53,10 +53,10 @@ void FAT::cat(string filename, char* entry_ptr) {
 }
 
 string FAT::cd(string dir_name, char* entry_ptr) {
-    if (dir_name == "/") {
+    /*if (dir_name == "/") {
         cur_entries = init_entries((entry_ptr+FAT::DIR_OFFSET), 224, true);
         return "/";
-    }
+    }*/
 
     if (dir_name.empty()) {
         cout << "Usage: cd directory" << endl;
@@ -94,7 +94,7 @@ string FAT::cd(string dir_name, char* entry_ptr) {
 
         cur_entries = init_entries((entry_ptr + FAT::DATA_OFFSET + (cluster * 512)), 16, false);
     }
-    if (dir.empty()) {
+    if (dir.empty() && path != "/") {
         cout << "The directory " << dir_name << " cannot be found" << endl;
         return cur_dir;
     }
