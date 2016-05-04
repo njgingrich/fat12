@@ -403,6 +403,7 @@ void FAT::info(string name) {
             filename = e.filename;
             cluster = e.cluster;
             offset = FAT::DIR_OFFSET + (i * 32);
+            break;
         }
     }
     if (filename.empty()) {

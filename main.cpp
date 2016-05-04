@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
         } else if (cmd == Command::HELP) {
             fat.help();
         } else if (cmd == Command::INFO) {
-            fat.info(input.front());
+            fat.info(input.at(1));
         } else if (cmd == Command::QUIT) {
             cont = false;
         }
